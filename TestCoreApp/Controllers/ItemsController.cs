@@ -1,4 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Diagnostics;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using System.Runtime.Serialization;
 using TestCoreApp.Models;
 
@@ -15,7 +18,7 @@ namespace TestCoreApp.Controllers
 
 		public IActionResult Index()
 		{
-			IEnumerable<Item> itemsList = _db.Items.ToList();
+			IEnumerable<Item> itemsList = _db.Items.Include(cat => cat.Category).ToList();
 
 			return View(itemsList);
 		}
@@ -23,6 +26,7 @@ namespace TestCoreApp.Controllers
         //Get
         public IActionResult New()
         {
+            createSelectList();
             return View();
         }
 
@@ -36,6 +40,7 @@ namespace TestCoreApp.Controllers
             {
                 _db.Items.Add(item);
                 _db.SaveChanges();
+				TempData["SuccessData"] = "Item has been added successfully"; 
                 return RedirectToAction("Index");
             }
             else
@@ -44,10 +49,26 @@ namespace TestCoreApp.Controllers
             }
         }
 
+		public void createSelectList(int SelectId = 1)
+		{
+			////create list of categories 
+			//var categories = new List<Category>
+			//{
+			//	new Category{Id= 0, Name = "Select category" },
+			//	new Category{Id= 1, Name = "Computer" },
+			//	new Category{Id= 2, Name = "Mobile" },
+			//	new Category{Id= 3, Name = "tablet" }
+			//};
+			List<Category> categories = _db.Categories.ToList(); // this from data base
+			SelectList listItems = new SelectList(categories,"Id","Name",SelectId ); //"SelectList" class to view list to choice form it.
+			ViewBag.CategryList = listItems; // "ViewBag" to move data from Controller to view.
+		}
+
 		//Get
 		public IActionResult Edit(int? Id)
 		{
-			if (Id == null || Id ==0) //Check if the ID exists or not
+
+            if (Id == null || Id ==0) //Check if the ID exists or not
             {
 				return NotFound();
 			}
@@ -57,6 +78,7 @@ namespace TestCoreApp.Controllers
 			{
 				return NotFound();
 			}
+			createSelectList(item.CategoryId);
 			return View(item); // sent item to Edit view
 		}
 
@@ -69,6 +91,7 @@ namespace TestCoreApp.Controllers
 			{
                 _db.Items.Update(item);
                 _db.SaveChanges();
+				TempData["SuccessData"] = "Item has been updated successfully";
                 return RedirectToAction("Index");
             }
 			else
@@ -80,7 +103,8 @@ namespace TestCoreApp.Controllers
 		//Get
 		public IActionResult Delete(int? Id)
 		{
-			if (Id == null || Id ==0) //Check if the ID exists or not
+
+            if (Id == null || Id ==0) //Check if the ID exists or not
             {
 				return NotFound();
 			}
@@ -90,6 +114,7 @@ namespace TestCoreApp.Controllers
 			{
 				return NotFound();
 			}
+			createSelectList(item.CategoryId);
 			return View(item); // sent item to Delete view
 		}
 
@@ -100,6 +125,7 @@ namespace TestCoreApp.Controllers
 		{
             _db.Items.Remove(item);
             _db.SaveChanges();
+            TempData["SuccessData"] = "Item has been deleted successfully";
             return RedirectToAction("Index");
 		}
     }
